@@ -5,6 +5,14 @@
         "ritwickdey.liveserver",
         "ms-vsliveshare.vsliveshare",
         "ms-vsliveshare.vsliveshare-audio",
-        "magicstack.MagicPython"
+        "magicstack.magicpython",
+        "durzn.brackethighlighter",
+        "ms-azuretools.vscode-docker",
+        "coenraads.bracket-pair-colorizer-2",
+        "visualstudioexptteam.vscodeintellicode",
+        "kevinrose.vsc-python-indent",
+        "wholroyd.jinja",
+        "njpwerner.autodocstring",
+        "ritwickdey.LiveServer"
     ]
 }
