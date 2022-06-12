@@ -61,11 +61,11 @@ class Game:
         self.pieces = []
         
         if type(starting_player_index) == int:
-            self.current_player = self.player[starting_player_index]
-            self.next_player = self.player[starting_player_index-1]
+            self.current_player = self.players[starting_player_index]
+            self.next_player = self.players[starting_player_index-1]
         else:
-            self.current_player = self.player[0]
-            self.next_player = self.player[1]
+            self.current_player = self.players[0]
+            self.next_player = self.players[1]
         
         with open(filename, 'r') as f:
             reader = csv.reader(f, delimiter=',')
@@ -80,6 +80,7 @@ class Game:
             
 if __name__ == "__main__":
     g = Game((Player(Color(0)), Player(Color(1))))
-    g.load('test1.csv')
-    g.print()
+    g.load('../test1.csv')
+  #  g.print()
+    print(g.__str__(numbers=True))
     print(g.pieces[0].get_moves())

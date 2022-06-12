@@ -1,6 +1,8 @@
 from enum import Enum, IntEnum
 from abc import ABC, abstractmethod
+from re import I
 
+WHITE_SPOTS = list((i)+1*(i//8%2) for i in range(0, 64, 2))
 class Color(IntEnum):
     BLACK = 0
     WHITE = 1
@@ -14,7 +16,7 @@ class Color_code(Enum):
 class Moves(Enum):
     BLACK = [7, 9]
     WHITE = [-9, -7]
-    KING = [v*i for i in range(1, 8) for v in (7, 9, -9, -7)]
+    KING = [7, 9, -9, -7]  #[v*i for i in range(1, 8) for v in (7, 9, -9, -7)]
     
 
 class King_zone(Enum):
@@ -32,28 +34,42 @@ class Piece(ABC):
         self._taken = False
         self._text_color = Color_code[self.color.name]
             
-    def get_moves(self, pos=None, taken=[]):
+    def get_moves(self, pos=None, directions=None):
         moves = []
-        
+
         if self._taken: return moves
-        
+
         if not pos:
             pos = self.position
             moves.append(('start', pos))
-        
-        for move in self._moves:
+
+        if not directions:
+            directions = self._moves
+        if type(directions) != list:
+            directions = [directions]
+
+        for move in directions:
+            n_pos = pos + move
             try:
-                if pos + move < 0 or pos + move not in ((i)+1*(i//8%2) for i in range(0, 64, 2)) or abs((pos + move) % 8 - pos % 8) != self._moves.index(move)//4+1:
+
+                if n_pos < 0 or n_pos not in WHITE_SPOTS or abs((n_pos) % 8 - pos % 8) > 1:
                     # pokud je pozice s offsetem kroku kladná, za přelomem desky nebo není na platném poli, pokračuj na další
+                    #tldr: detekuje a skipuje nelegální pozice
+                    print('skipping')
                     continue
-                
-                if not self._board[pos + move]:
+
+                if not self._board[n_pos]:
                     # pokud není pozice s offsetem kroku zabraná, přidej si ji do možných kroků
-                    moves.append(('move', move, pos + move))
-                    
-                elif self._board[pos + move].color != self.color:
-                    ... # TODO: zabírání
-            except IndexError: pass
+                    moves.append(('move', move, n_pos))
+
+                elif self._board[n_pos].color != self.color:
+                    # pokud je na pozici kroku nepřátelká figurrka, zaber ji
+                    sub_move = []
+                    sub_move.append(('take', move, n_pos))
+                    sub_move.append(*self.get_moves(pos=pos+move, directions=move))
+                    moves.append(sub_move)
+
+            except IndexError: print('endexErr')
         return moves
         
         
@@ -82,3 +98,41 @@ class King(Piece):
     
     def __repr__(self):
         return self._text_color.value+'b '
+    def get_moves(self, pos=None, taken=[]):
+        moves = []
+        zabral = False
+        if self._taken: return moves
+        
+        if not pos:
+            pos = self.position
+            moves.append(('start', pos))
+        for move in [7,9,-9,-7]:            
+            zabral = False       
+            for i in range(pos+move,64 if move>0 else -1,move):
+                print(self._board[i],i)  
+                print(abs((i+move)%8 - i % 8))                
+                
+                if i>63 or abs((i-move)%8 - i % 8 )>1 or i<0 or i in taken:
+                    print(i, "chyba")
+                    break                               
+                if not self._board[i]:
+                    
+                    moves.append(('move', move, i))                    
+                    if zabral:
+                        taken.append(i)
+                        moves.append((i,self.get_moves(pos= i,taken=taken)))
+                    zabral = False
+                elif self._board[i].color == self.color:
+                    print(i, "proc ?")
+                    
+                    break
+                elif self._board[i].color != self.color and i not in taken:
+                    print(i,"zabirani!!!!!")
+                    taken.append(i)
+                    if zabral == True:
+                        print(i, "WTF")                        
+                        break
+                    zabral = True                                  
+        
+
+        return moves
