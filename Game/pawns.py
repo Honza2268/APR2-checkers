@@ -110,29 +110,20 @@ class King(Piece):
             zabral = False       
             for i in range(pos+move,64 if move>0 else -1,move):
                 print(self._board[i],i)  
-                print(abs((i+move)%8 - i % 8))                
-                
+                print(abs((i+move)%8 - i % 8))  
                 if i>63 or abs((i-move)%8 - i % 8 )>1 or i<0 or i in taken:
-                    print(i, "chyba")
                     break                               
-                if not self._board[i]:
-                    
+                if not self._board[i]:                    
                     moves.append(('move', move, i))                    
                     if zabral:
                         taken.append(i)
                         moves.append((i,self.get_moves(pos= i,taken=taken)))
                     zabral = False
-                elif self._board[i].color == self.color:
-                    print(i, "proc ?")
-                    
+                elif self._board[i].color == self.color:                    
                     break
                 elif self._board[i].color != self.color and i not in taken:
-                    print(i,"zabirani!!!!!")
                     taken.append(i)
-                    if zabral == True:
-                        print(i, "WTF")                        
+                    if zabral == True:                    
                         break
-                    zabral = True                                  
-        
-
+                    zabral = True   
         return moves
