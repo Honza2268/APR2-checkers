@@ -94,10 +94,8 @@ class Man(Piece):
 class King(Piece):
     def __init__(self, man: Man):
         super().__init__(man.color, man.position, man._board)
-        self._moves = Moves.KING.value
-    
-    def __repr__(self):
-        return self._text_color.value+'b '
+        self._moves = Moves.KING.value    
+
     def get_moves(self, pos=None, taken=[]):
         moves = []
         zabral = False
@@ -127,3 +125,7 @@ class King(Piece):
                         break
                     zabral = True   
         return moves
+    
+    def __repr__(self):
+        return self._text_color.value+'b '
+    
