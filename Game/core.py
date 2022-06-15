@@ -1,5 +1,7 @@
 from player import Player
-from pawns import Man, King, Color
+from pieces import Man, King
+from constants import Color
+from treelib import Node, Tree
 import csv
 
 
@@ -85,11 +87,45 @@ class Game:
                 if len(piece) == 2:
                     self.promote_piece(p, True)
     
-    def get_piece_moves(self, piece, strict=False):
-        return piece.get_moves(strict=strict)
+    def get_piece_moves(self, piece, strict=True):
+        lst = piece.get_moves()
+        root, *tail = lst
+        tree = Tree()
+        node = Node(root, root)
+        tree.add_node(node)
+
+        q = [[node, *tail]]
+        while q:
+            parent, *children = q.pop()
+            for child in children:
+                if isinstance(child, list):
+                    head, *tail = child
+                    node = tree.create_node(head, head, parent=parent)
+                    q.append([node, *tail])
+                else:
+                    tree.create_node(child, parent=parent)
+        
+        paths = tree.paths_to_leaves()
+        
+        strict_paths = list(filter(lambda x: any('take' in i for i in x), paths))
+        paths = strict_paths if strict and strict_paths else paths
+        
+        for path in paths:
+            last_take = 0
+            for step in path[::-1]:
+                if not 'take' in step:
+                    last_take += 1
+                else:
+                    break
+            for i in range(last_take-1):
+                paths.append(path[:last_take])
+
+        return paths
+    
     
     def make_move(self, piece, move_id):
         piece.vis_moves()
+        #TODO: this
 
 
 if __name__ == "__main__":
@@ -97,4 +133,6 @@ if __name__ == "__main__":
     g.load('../test2.csv')
     g.d_print()
     g.make_move(g.pieces[0], 0)
+    for l in g.get_piece_moves(g.pieces[0]):
+        print(l)
     # print(g.pieces[0].get_moves())

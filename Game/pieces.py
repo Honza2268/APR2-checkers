@@ -1,29 +1,6 @@
-from enum import Enum, IntEnum
 from abc import ABC, abstractmethod
 from treelib import Node, Tree
-
-WHITE_SPOTS = list((i)+1*(i//8 % 2) for i in range(0, 64, 2))
-
-
-class Color(IntEnum):
-    BLACK = 0
-    WHITE = 1
-
-
-class Color_code(Enum):
-    BLACK = '\x1B[38;5;16m'
-    WHITE = '\x1B[38;5;15m'
-
-
-class Moves(Enum):
-    BLACK = [7, 9]
-    WHITE = [-9, -7]
-    KING = [7, 9, -9, -7]  # [v*i for i in range(1, 8) for v in (7, 9, -9, -7)]
-
-
-class King_zone(Enum):
-    BLACK = range(48, 64)
-    WHITE = range(16)
+from constants import *
 
 
 class Piece(ABC):
@@ -36,12 +13,12 @@ class Piece(ABC):
         self._text_color = Color_code[self.color.name]
 
     @abstractmethod
-    def get_moves_p1(self, pos, direction, n_pos, used):...
-    
-    @abstractmethod
-    def get_moves_p1(self, pos, direction, n_pos, used):...
+    def get_moves_p1(self, position, direction, new_position, used): ...
 
-    def get_moves(self, pos=None, directions=None, used=None, strict=False):
+    @abstractmethod
+    def get_moves_p1(self, position, direction, new_position, used): ...
+
+    def get_moves(self, position=None, directions=None, used=None):
         moves = []
 
         if not used:
@@ -50,9 +27,9 @@ class Piece(ABC):
         if self._captured:
             return [('captured')]
 
-        if pos == None:
-            pos = self.position
-            moves.append(('start', pos))
+        if position == None:
+            position = self.position
+            moves.append(('start', 0, position))
 
         if not directions:
             directions = self._moves
@@ -60,25 +37,23 @@ class Piece(ABC):
             directions = [directions]
 
         for direction in directions:
-            n_pos = pos + direction
+            new_position = position + direction
 
-            if not 63 > n_pos > 0 or (n_pos - direction) // 8 == n_pos // 8 or abs(n_pos % 8 - pos % 8) > 1:
+            if (not MAX_BOARD_INDEX > new_position >= 0) or (new_position - direction) // BOARD_SIDE_LENGTH == new_position // BOARD_SIDE_LENGTH or abs(new_position % BOARD_SIDE_LENGTH - position % BOARD_SIDE_LENGTH) > 1:
                 # pokud je pozice s offsetem kroku kladná, za přelomem desky nebo není na platném poli, pokračuj na další
                 # tldr: detekuje a skipuje nelegální pozice
                 continue
 
-            if not self._board[n_pos] and n_pos not in used:
+            if not self._board[new_position] and new_position not in used:
                 # pokud není pozice s offsetem kroku zabraná, přidej si ji do možných kroků
-                moves.append(self.get_moves_p1(pos, direction, n_pos, used))
+                moves.append(self.get_moves_p1(
+                    position, direction, new_position, used, moves))
 
-            elif self._board[n_pos].color != self.color and n_pos not in used:
+            elif self._board[new_position].color != self.color and new_position not in used:
                 # pokud je na pozici kroku nepřátelská figurka, zaber ji, pokud je za ní místo
-                moves.append(self.get_moves_p2(pos, direction, n_pos, used))
+                moves.append(self.get_moves_p2(
+                    position, direction, new_position, used, moves))
 
-        if strict:
-            ...
-            #TODO: odstranění neuplatnitelných tahů podle pravidel
-        
         return moves
 
     def vis_moves(self):
@@ -99,6 +74,7 @@ class Piece(ABC):
                     q.append([node, *tail])
                 else:
                     tree.create_node(child, parent=parent)
+
         tree.show()
 
 
@@ -119,15 +95,15 @@ class Man(Piece):
     def __repr__(self):
         return self._text_color.value+'a '
 
-    def get_moves_p1(self, pos, direction, n_pos, used):
-        return [('move', direction, n_pos)]
+    def get_moves_p1(self, position, direction, new_position, used, moves):
+        return [('move', direction, new_position)]
 
-    def get_moves_p2(self, pos, direction, n_pos, used):
-        if n_pos+direction < 64 and not self._board[n_pos+direction] and n_pos not in used:
+    def get_moves_p2(self, position, direction, new_position, used, moves):
+        if new_position+direction <= MAX_BOARD_INDEX and not self._board[new_position+direction] and new_position not in used:
             sub_move = []
-            sub_move.append(('take', direction, n_pos))
+            sub_move.append(('take', direction, new_position))
             sub_move.append(*self.get_moves(
-                pos=n_pos, directions=direction))
+                position = new_position, directions=direction))
             return sub_move
 
 
@@ -139,23 +115,23 @@ class King(Piece):
     def __repr__(self):
         return self._text_color.value+'b '
 
-    def get_moves_p1(self, pos, direction, n_pos, used):
+    def get_moves_p1(self, position, direction, new_position, used, moves):
         sub_move = []
-        sub_move.append(('move', direction, n_pos))
-        n_move = self.get_moves(
-            pos=n_pos, directions=direction, used=used)
-        if n_move:
-            sub_move.append(*n_move)
+        sub_move.append(('move', direction, new_position))
+        next_move = self.get_moves(
+            position=new_position, directions=direction, used=used)
+        if next_move:
+            sub_move.append(*next_move)
         return sub_move
 
-    def get_moves_p2(self, pos, direction, n_pos, used):
-        if n_pos+direction < 64 and not self._board[n_pos+direction]:
-            used += [n_pos, n_pos+direction]
+    def get_moves_p2(self, position, direction, new_position, used, moves):
+        if new_position+direction <= MAX_BOARD_INDEX and not self._board[new_position+direction]:
+            used += [new_position, new_position+direction]
             sub_move = []
-            sub_move.append(('take', direction, n_pos))
-            sub_move.append([('move', direction, n_pos+direction)])
-            n_move = self.get_moves(
-                pos=n_pos+direction, used=used)
-            if n_move:
-                sub_move[-1] += n_move
+            sub_move.append(('take', direction, new_position))
+            sub_move.append([('move', direction, new_position+direction)])
+            next_move = self.get_moves(
+                position=new_position+direction, used=used)
+            if next_move and any('take' in i[0] for i in next_move):
+                sub_move[-1] += next_move
             return sub_move

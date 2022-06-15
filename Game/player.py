@@ -1,4 +1,4 @@
-from pawns import Color
+from constants import Color
 
 class Player:
     def __init__(self, color: Color, *name: str):
