@@ -13,15 +13,18 @@ class Piece(ABC):
         self._captured = False
         self._text_color = Color_code[self.color.name]
 
-    def count_near_enemies(self, position=None):
+    def count_near_enemies(self, position=None, vision_range=1):
         if position == None:
             position = self.position
             
         near_enemies = 0
         for direction in self._moves:
-            test_position = position + direction
-            if self._board[test_position] and self._board[test_position].color != self.color:
-                near_enemies += 1
+            for i in range(vision_range):
+                test_position = position + direction * (i+1)
+                if test_position in ILLEGAL_POSITIONS or abs(test_position % 8 - test_position-direction % 8) > 1:
+                    break
+                if self._board[test_position] and self._board[test_position].color != self.color:
+                    near_enemies += 1
         return near_enemies
 
 
@@ -58,28 +61,6 @@ class Piece(ABC):
             self.get_moves_uncommon(position, directions, direction, local_root, move_tree)
 
         return move_tree
-
-
-    def vis_moves(self):
-        # stolen from stackoverflow (https://stackoverflow.com/questions/64713797/visualizing-parse-tree-nested-list-to-tree-in-python)
-        lst = self.get_moves()
-        root, *tail = lst
-        tree = Tree()
-        node = Node(root)
-        tree.add_node(node)
-
-        q = [[node, *tail]]
-        while q:
-            parent, *children = q.pop()
-            for child in children:
-                if isinstance(child, list):
-                    head, *tail = child
-                    node = tree.create_node(head, parent=parent)
-                    q.append([node, *tail])
-                else:
-                    tree.create_node(child, parent=parent)
-
-        tree.show()
 
 
 class Man(Piece):
@@ -135,39 +116,56 @@ class King(Piece):
         subtree = Tree()
         last_take = None
         last_move = None
-            
-        for test_position in range(position+direction, MAX_BOARD_INDEX+1 if direction > 0 else -1, direction):
-            if test_position in ILLEGAL_POSITIONS:
-                break
-            if contact:
-                # pokud došlo ke kontaktu s nepřátelskou figurkou, zkontroluj další pole pro doskok
-                if (self._board[test_position] or not
-                        (MAX_BOARD_INDEX >= test_position >= 0)):
-                    # pokud je na poli figrka, končime
-                    debug_print(f'Bust @ {test_position}.')
+        
+        visible_enemies = self.count_near_enemies(position, 8)
+        
+        if visible_enemies:
+            for test_position in range(position+direction, MAX_BOARD_INDEX+1 if direction > 0 else -1, direction):
+                if test_position in ILLEGAL_POSITIONS:
+                    # pokud je pozice neplatná, končím
                     break
-                else:
-                    # pokud na poli není figurka, přidej tah do možných tahů
+                if contact:
+                    # pokud došlo ke kontaktu s nepřátelskou figurkou, zkontroluj další pole pro doskok
+                    if (self._board[test_position] or not
+                            (MAX_BOARD_INDEX >= test_position >= 0)):
+                        # pokud je na poli figrka, končime
+                        debug_print(f'Bust @ {test_position}.')
+                        break
+                    else:
+                        # pokud na poli není figurka, přidej tah do možných tahů
+                        debug_print(
+                            f'Found valid landing spot @ {test_position}, adding.')
+                        last_move = f'move@{test_position}n{move_tree.size()+subtree.size()}'
+                        subtree.create_node(last_move, last_move, last_take, data=(
+                            'move', direction, test_position))
+
+                        self.get_moves(position=test_position, directions=[
+                                        x for x in self._moves if x != -direction], local_root=last_move, move_tree=subtree)
+
+                elif self._board[test_position] and self._board[test_position].color != self.color:
+                    # pokud najednou najdeš nepřátelskou figurku, nastav flag 'contact' na jeho pozici
+                    contact = test_position
+
+                    last_take = f'take@{test_position}n{move_tree.size()+subtree.size()}'
+                    subtree.create_node(last_take, last_take, None, data=(
+                        'take', direction, test_position))
+
                     debug_print(
-                        f'Found valid landing spot @ {test_position}, adding.')
-                    last_move = f'move@{test_position}n{move_tree.size()+subtree.size()}'
-                    subtree.create_node(last_move, last_move, last_take, data=(
-                        'move', direction, test_position))
+                        f'Enemy @ {test_position}, checking for possible moves...')
 
-                    self.get_moves(position=test_position, directions=[
-                                    x for x in self._moves if x != -direction], local_root=last_move, move_tree=subtree)
+            if len(subtree) > 1:
+                # pokud jsou nějaké pohyby v připravované sekvenci, přidej ji do možných tahů
+                move_tree.paste(local_root, subtree)
+        else:
+            # pokud nejsou žádné nepřátelské figurky v blízkosti, přidej tahy do možných tahů
+            for test_position in range(position+direction, MAX_BOARD_INDEX+1 if direction > 0 else -1, direction):
+                if test_position in ILLEGAL_POSITIONS:
+                    # pokud je pozice neplatná, končíme
+                    break 
+                if not self._board[test_position]:
+                    last_move = f'move@{test_position}n{move_tree.size()}'
+                    move_tree.create_node(last_move, last_move, local_root, data=('move', direction, test_position))
+                else:
+                    # je na poli figurka, končíme
+                    break
 
-            elif self._board[test_position] and self._board[test_position].color != self.color:
-                # pokud najednou najdeš nepřátelskou figurku, nastav flag 'contact' na jeho pozici
-                contact = test_position
-
-                last_take = f'take@{test_position}n{move_tree.size()+subtree.size()}'
-                subtree.create_node(last_take, last_take, None, data=(
-                    'take', direction, test_position))
-
-                debug_print(
-                    f'Enemy @ {test_position}, checking for possible moves...')
-
-        if len(subtree) > 1:
-            # pokud jsou nějaké pohyby v připravované sekvenci, přidej ji do možných tahů
-            move_tree.paste(local_root, subtree)

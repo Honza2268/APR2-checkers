@@ -91,12 +91,12 @@ class Game:
 if __name__ == "__main__":
     g = Game((Player(Color(0)), Player(Color(1))))
     try:
-        g.load_layout('../test2.csv')
+        g.load_layout('../test_e.csv')
     except:
-        g.load_layout('test2.csv')
+        g.load_layout('test_e.csv')
     g.d_print()
     #g.make_move(g.pieces[0], 0)
     '''for l in g.get_piece_moves(g.pieces[0]):
         print(l)'''
     print(g.get_piece_moves(g.pieces[0]))
-    #print(g.pieces[0].get_moves())
+    print(g.pieces[0].get_moves())
