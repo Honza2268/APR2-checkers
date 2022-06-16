@@ -21,7 +21,7 @@ class Piece(ABC):
         for direction in self._moves:
             for i in range(vision_range):
                 test_position = position + direction * (i+1)
-                if test_position in ILLEGAL_POSITIONS or abs(test_position % 8 - test_position-direction % 8) > 1:
+                if test_position in ILLEGAL_POSITIONS or abs(test_position % 8 - (test_position-direction) % 8) > 1 or test_position > MAX_BOARD_INDEX:
                     break
                 if self._board[test_position] and self._board[test_position].color != self.color:
                     near_enemies += 1
