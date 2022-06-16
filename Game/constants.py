@@ -1,7 +1,12 @@
 from enum import Enum, IntEnum
 
+DEBUG_OUT = False
+
 MAX_BOARD_INDEX = 63
 BOARD_SIDE_LENGTH = 8
+
+ILLEGAL_POSITIONS = list(x for x in range(64) if (x%2)^(x//8%2))
+LEGAL_POSITIONS = list(x for x in range(64) if not (x%2)^(x//8%2))
 
 
 class Color(IntEnum):

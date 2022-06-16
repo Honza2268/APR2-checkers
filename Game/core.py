@@ -2,7 +2,7 @@ from player import Player
 from pieces import Man, King
 from constants import Color
 from treelib import Node, Tree
-import csv
+from utilities import *
 
 
 class Game:
@@ -59,67 +59,27 @@ class Game:
         return row*8+col
 
     def save(self, filename):
-        with open(filename, 'w', newline='') as f:
-            writer = csv.writer(f, delimiter=',')
-            for p in self.pieces:
-                writer.writerow((self.position_to_anotation(
-                    p.position), ('w' if p.color else 'b') * (1 if type(p) == Man else 2)))
+        data = {self.position_to_anotation(p.position): ('w' if p.color else 'b') * (1 if type(p) == Man else 2) for p in self.pieces}
+        save_dict_csv(data, filename)
 
-    def load(self, filename, starting_player_index=None):
+    def load_layout(self, filename):
         self.board = [None] * 64
         self.pieces = []
 
-        if type(starting_player_index) == int:
-            self.current_player = self.players[starting_player_index]
-            self.next_player = self.players[starting_player_index-1]
-        else:
-            self.current_player = self.players[0]
-            self.next_player = self.players[1]
-
-        with open(filename, 'r') as f:
-            reader = csv.reader(f, delimiter=',')
-            for row in reader:
-                anotation, piece = row
-                position = self.anotation_to_position(anotation)
-                p = Man(Color(0 if 'b' in piece else 1))
-                self.pieces.append(p)
-                p.place_on(self.board, position)
-                if len(piece) == 2:
-                    self.promote_piece(p, True)
+        data = load_dict_csv(filename)
+        for anotation, piece in data.items():
+            position = self.anotation_to_position(anotation)
+            p = Man(Color(0 if 'b' in piece else 1))
+            self.pieces.append(p)
+            p.place_on(self.board, position)
+            if len(piece) == 2:
+                self.promote_piece(p, True)
     
-    def get_piece_moves(self, piece, strict=True):
-        lst = piece.get_moves()
-        root, *tail = lst
-        tree = Tree()
-        node = Node(root, root)
-        tree.add_node(node)
-
-        q = [[node, *tail]]
-        while q:
-            parent, *children = q.pop()
-            for child in children:
-                if isinstance(child, list):
-                    head, *tail = child
-                    node = tree.create_node(head, head, parent=parent)
-                    q.append([node, *tail])
-                else:
-                    tree.create_node(child, parent=parent)
+    def get_piece_moves(self, piece):
+        tree = piece.get_moves()
         
         paths = tree.paths_to_leaves()
         
-        strict_paths = list(filter(lambda x: any('take' in i for i in x), paths))
-        paths = strict_paths if strict and strict_paths else paths
-        
-        for path in paths:
-            last_take = 0
-            for step in path[::-1]:
-                if not 'take' in step:
-                    last_take += 1
-                else:
-                    break
-            for i in range(last_take-1):
-                paths.append(path[:last_take])
-
         return paths
     
     
@@ -130,9 +90,13 @@ class Game:
 
 if __name__ == "__main__":
     g = Game((Player(Color(0)), Player(Color(1))))
-    g.load('../test2.csv')
+    try:
+        g.load_layout('../test2.csv')
+    except:
+        g.load_layout('test2.csv')
     g.d_print()
-    g.make_move(g.pieces[0], 0)
-    for l in g.get_piece_moves(g.pieces[0]):
-        print(l)
-    # print(g.pieces[0].get_moves())
+    #g.make_move(g.pieces[0], 0)
+    '''for l in g.get_piece_moves(g.pieces[0]):
+        print(l)'''
+    print(g.get_piece_moves(g.pieces[0]))
+    #print(g.pieces[0].get_moves())

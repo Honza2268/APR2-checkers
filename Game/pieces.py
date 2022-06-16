@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from treelib import Node, Tree
 from constants import *
+from utilities import *
 
 
 class Piece(ABC):
@@ -12,49 +13,52 @@ class Piece(ABC):
         self._captured = False
         self._text_color = Color_code[self.color.name]
 
-    @abstractmethod
-    def get_moves_p1(self, position, direction, new_position, used): ...
+    def count_near_enemies(self, position=None):
+        if position == None:
+            position = self.position
+            
+        near_enemies = 0
+        for direction in self._moves:
+            test_position = position + direction
+            if self._board[test_position] and self._board[test_position].color != self.color:
+                near_enemies += 1
+        return near_enemies
 
-    @abstractmethod
-    def get_moves_p1(self, position, direction, new_position, used): ...
 
-    def get_moves(self, position=None, directions=None, used=None):
-        moves = []
-
-        if not used:
-            used = []
-
-        if self._captured:
-            return [('captured')]
+    def get_moves_common(self, position, directions, local_root, move_tree):
+        if not move_tree:
+            move_tree = Tree()
 
         if position == None:
             position = self.position
-            moves.append(('start', 0, position))
+
+        if not local_root:
+            debug_print(f'Standing @ {position}')
+            local_root = f'start@{position}n{move_tree.size()}'
+            move_tree.create_node(local_root, local_root,
+                                  parent=None, data=('start', 0, position))
 
         if not directions:
             directions = self._moves
         if type(directions) != list:
             directions = [directions]
 
+        return position, directions, local_root, move_tree
+    
+    @abstractmethod
+    def get_moves_uncommon(self, position, directions, direction, local_root, move_tree):...
+    
+    def get_moves(self, position=None, directions=None, local_root=None, move_tree=None):
+
+        position, directions, local_root, move_tree = self.get_moves_common(
+            position, directions, local_root, move_tree)
+
         for direction in directions:
-            new_position = position + direction
 
-            if (not MAX_BOARD_INDEX > new_position >= 0) or (new_position - direction) // BOARD_SIDE_LENGTH == new_position // BOARD_SIDE_LENGTH or abs(new_position % BOARD_SIDE_LENGTH - position % BOARD_SIDE_LENGTH) > 1:
-                # pokud je pozice s offsetem kroku kladná, za přelomem desky nebo není na platném poli, pokračuj na další
-                # tldr: detekuje a skipuje nelegální pozice
-                continue
+            self.get_moves_uncommon(position, directions, direction, local_root, move_tree)
 
-            if not self._board[new_position] and new_position not in used:
-                # pokud není pozice s offsetem kroku zabraná, přidej si ji do možných kroků
-                moves.append(self.get_moves_p1(
-                    position, direction, new_position, used, moves))
+        return move_tree
 
-            elif self._board[new_position].color != self.color and new_position not in used:
-                # pokud je na pozici kroku nepřátelská figurka, zaber ji, pokud je za ní místo
-                moves.append(self.get_moves_p2(
-                    position, direction, new_position, used, moves))
-
-        return moves
 
     def vis_moves(self):
         # stolen from stackoverflow (https://stackoverflow.com/questions/64713797/visualizing-parse-tree-nested-list-to-tree-in-python)
@@ -94,17 +98,28 @@ class Man(Piece):
 
     def __repr__(self):
         return self._text_color.value+'a '
-
-    def get_moves_p1(self, position, direction, new_position, used, moves):
-        return [('move', direction, new_position)]
-
-    def get_moves_p2(self, position, direction, new_position, used, moves):
-        if new_position+direction <= MAX_BOARD_INDEX and not self._board[new_position+direction] and new_position not in used:
-            sub_move = []
-            sub_move.append(('take', direction, new_position))
-            sub_move.append(*self.get_moves(
-                position = new_position, directions=direction))
-            return sub_move
+    
+    def get_moves_uncommon(self, position, directions, direction, local_root, move_tree):
+        test_position = position + direction
+        next_position = position + 2*direction
+        if test_position in LEGAL_POSITIONS:
+            # pokud je pozice platná...
+            if self._board[test_position] and self._board[test_position].color != self.color:
+                # a pokud na pozici je nepřátelská figurka
+                last_take = f'take@{test_position}n{move_tree.size()}'
+                if next_position in LEGAL_POSITIONS:
+                    if not self._board[next_position]:
+                        # a pokud je i následující pozice volná, přidej tah do možných tahů
+                        last_move = f'move@{test_position}n{move_tree.size()}'
+                        move_tree.create_node(last_take, last_take, None, data=(
+                            'take', direction, test_position))
+                        move_tree.create_node(last_move, last_move, last_take, data=(
+                            'move', direction, test_position))
+            elif not self._board[test_position] and not self.count_near_enemies():
+                # a v blízkosti nejsou nepřátelé, přidej tah do možných tahů
+                last_move = f'move@{test_position}n{move_tree.size()}'
+                move_tree.create_node(last_move, last_move, last_take, data=(
+                    'move', direction, test_position))
 
 
 class King(Piece):
@@ -115,23 +130,44 @@ class King(Piece):
     def __repr__(self):
         return self._text_color.value+'b '
 
-    def get_moves_p1(self, position, direction, new_position, used, moves):
-        sub_move = []
-        sub_move.append(('move', direction, new_position))
-        next_move = self.get_moves(
-            position=new_position, directions=direction, used=used)
-        if next_move:
-            sub_move.append(*next_move)
-        return sub_move
+    def get_moves_uncommon(self, position, directions, direction, local_root, move_tree):
+        contact = 0
+        subtree = Tree()
+        last_take = None
+        last_move = None
+            
+        for test_position in range(position+direction, MAX_BOARD_INDEX+1 if direction > 0 else -1, direction):
+            if test_position in ILLEGAL_POSITIONS:
+                break
+            if contact:
+                # pokud došlo ke kontaktu s nepřátelskou figurkou, zkontroluj další pole pro doskok
+                if (self._board[test_position] or not
+                        (MAX_BOARD_INDEX >= test_position >= 0)):
+                    # pokud je na poli figrka, končime
+                    debug_print(f'Bust @ {test_position}.')
+                    break
+                else:
+                    # pokud na poli není figurka, přidej tah do možných tahů
+                    debug_print(
+                        f'Found valid landing spot @ {test_position}, adding.')
+                    last_move = f'move@{test_position}n{move_tree.size()+subtree.size()}'
+                    subtree.create_node(last_move, last_move, last_take, data=(
+                        'move', direction, test_position))
 
-    def get_moves_p2(self, position, direction, new_position, used, moves):
-        if new_position+direction <= MAX_BOARD_INDEX and not self._board[new_position+direction]:
-            used += [new_position, new_position+direction]
-            sub_move = []
-            sub_move.append(('take', direction, new_position))
-            sub_move.append([('move', direction, new_position+direction)])
-            next_move = self.get_moves(
-                position=new_position+direction, used=used)
-            if next_move and any('take' in i[0] for i in next_move):
-                sub_move[-1] += next_move
-            return sub_move
+                    self.get_moves(position=test_position, directions=[
+                                    x for x in self._moves if x != -direction], local_root=last_move, move_tree=subtree)
+
+            elif self._board[test_position] and self._board[test_position].color != self.color:
+                # pokud najednou najdeš nepřátelskou figurku, nastav flag 'contact' na jeho pozici
+                contact = test_position
+
+                last_take = f'take@{test_position}n{move_tree.size()+subtree.size()}'
+                subtree.create_node(last_take, last_take, None, data=(
+                    'take', direction, test_position))
+
+                debug_print(
+                    f'Enemy @ {test_position}, checking for possible moves...')
+
+        if len(subtree) > 1:
+            # pokud jsou nějaké pohyby v připravované sekvenci, přidej ji do možných tahů
+            move_tree.paste(local_root, subtree)
