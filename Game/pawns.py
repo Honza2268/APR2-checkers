@@ -1,9 +1,7 @@
 from enum import Enum, IntEnum
 from abc import ABC, abstractmethod
-from re import I
 from turtle import position
-
-from numpy import true_divide
+from treelib import Tree
 
 WHITE_SPOTS = list((i)+1*(i//8%2) for i in range(0, 64, 2))
 class Color(IntEnum):
@@ -102,18 +100,20 @@ class King(Piece):
         super().__init__(man.color, man.position, man._board)
         self._moves = Moves.KING.value    
 
-    def get_moves(self, position=None, taken=[position]):
-        moves = []
+    def get_moves(self, position=None, taken=[18]):
+        moves = []        
         contact = False
-        if self._taken:
-            return moves
+        if self._taken: return moves
         if position == None:
             position = self.position
             moves.append(('start', position))
         for direction in self._moves:
             contact = False
-            for new_position in range(position+direction,64 if direction>0 else -1,direction):
-                if new_position>63 or abs((new_position-direction)%8 - new_position % 8 )!=1 or new_position<0 or new_position in taken:
+            """cycle = self.cyklus_direction_loop(position,direction,moves,taken,contact)
+            moves += cycle[0]
+            taken += cycle[1]"""
+            for new_position in (range(position+direction,64 if direction>0 else -1,direction)):
+                if self.checking_new_postion(new_position,direction,taken):
                     break
                 if not self._board[new_position]:
                     if position == self.position:
@@ -123,27 +123,58 @@ class King(Piece):
                             moves.append(('move', direction, new_position))
                     if contact:
                         taken.append(new_position)
-                        moves_in_recursion = self.get_moves(position= new_position,taken=taken)
-                        if moves_in_recursion != []:
-                            moves.append((new_position,moves_in_recursion))
+                        move_repeat = self.get_moves(position=new_position,taken=taken)
+                        if move_repeat != []:
+                            moves.append((new_position,move_repeat))
                     contact = False
                 elif self._board[new_position].color == self.color:
                     break
                 elif self._board[new_position].color != self.color and new_position not in taken:
                     taken.append(new_position)
-                    if contact == True:
+                    if contact == True:                    
                         break
                     contact = True
+        
         return moves
+
     
-    def checking_new_postion(self,new_position,direction):
+    def checking_new_postion(self,new_position,direction,taken):
         if new_position<len(self._board) and new_position>=0: #kontrola jestli nová pozice figurky není mimo hrací desku
            print(new_position, "Prošlo první kontrolou")
-           if (abs((new_position-direction)%self.number_of_rows - new_position % self.number_of_rows) <= 1): #kontrola jestli předchozí pozice a nová pozci jsou sloupce vedle sebe               
+           if (abs((new_position-direction)%self.number_of_rows - new_position % self.number_of_rows) == 1): #kontrola jestli předchozí pozice a nová pozci jsou sloupce vedle sebe               
                 print(new_position, "prošlo druhou kontrolou")
-                return True
+                if new_position not in taken: #kontrola jestli nová pozice je už v možných tazích
+                    print(new_position, "prošlo třetí kontrolou")
+                    return False
         print(new_position,"neprošlo kontrolou")       
-        return False
+        return True
+    
+    def cyklus_direction_loop(self,position,direction,moves,taken,contact):        
+        for new_position in range(position+direction,64 if direction>0 else -1,direction):
+                if self.checking_new_postion(new_position,direction,taken):
+                    break
+                if not self._board[new_position]:
+                    if position == self.position:
+                        pass
+                        moves.append(('move', direction, new_position))  
+                    elif contact:
+                        if new_position != self.position:
+                            moves.append(('move', direction, new_position))
+                    if contact:
+                        taken.append(new_position)
+                        move_repeat = self.get_moves(position=new_position,taken=taken)
+                        if move_repeat != []:
+                            moves.append((new_position,move_repeat))
+                    contact = False
+                elif self._board[new_position].color == self.color:
+                    break
+                elif new_position not in taken:
+                    taken.append(new_position)
+                    if contact == True:                    
+                        break
+                    contact = True
+        return [moves,taken]   
+
         
     def __repr__(self):
         return self._text_color.value+'b '
