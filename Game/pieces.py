@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from treelib import Node, Tree
+from treelib import Tree
 from constants import *
 from utilities import *
 
 
 class Piece(ABC):
-    def __init__(self, color: Color, position=None, board=None):
+    def __init__(self, color: Color, position: int = None, board: list = None):
         self.color = color
         self.position: int = position
         self._board: list = board
@@ -13,10 +13,10 @@ class Piece(ABC):
         self._captured = False
         self._text_color = Color_code[self.color.name]
 
-    def count_near_enemies(self, position=None, vision_range=1):
+    def count_near_enemies(self, position: int = None, vision_range: int = 1):
         if position == None:
             position = self.position
-            
+
         near_enemies = 0
         for direction in self._moves:
             for i in range(vision_range):
@@ -27,8 +27,7 @@ class Piece(ABC):
                     near_enemies += 1
         return near_enemies
 
-
-    def get_moves_common(self, position, directions, local_root, move_tree):
+    def get_moves_common(self, position: int, directions: list | int, local_root: str, move_tree: Tree):
         if not move_tree:
             move_tree = Tree()
 
@@ -47,18 +46,20 @@ class Piece(ABC):
             directions = [directions]
 
         return position, directions, local_root, move_tree
-    
+
     @abstractmethod
-    def get_moves_uncommon(self, position, directions, direction, local_root, move_tree):...
-    
-    def get_moves(self, position=None, directions=None, local_root=None, move_tree=None):
+    def get_moves_uncommon(self, position: int, direction: int,
+                           local_root: str, move_tree: Tree): ...
+
+    def get_moves(self, position: int = None, directions: list = None, local_root: str = None, move_tree: Tree = None):
 
         position, directions, local_root, move_tree = self.get_moves_common(
             position, directions, local_root, move_tree)
 
         for direction in directions:
 
-            self.get_moves_uncommon(position, directions, direction, local_root, move_tree)
+            self.get_moves_uncommon(
+                position, direction, local_root, move_tree)
 
         return move_tree
 
@@ -69,7 +70,7 @@ class Man(Piece):
         self._moves = Moves[self.color.name].value
         self._king_zone = King_zone[self.color.name].value
 
-    def place_on(self, board, position):
+    def place_on(self, board: list, position: int):
         if not self.position:
             self._board = board
             self.position = position
@@ -79,8 +80,8 @@ class Man(Piece):
 
     def __repr__(self):
         return self._text_color.value+'a '
-    
-    def get_moves_uncommon(self, position, directions, direction, local_root, move_tree):
+
+    def get_moves_uncommon(self, position: int, direction: int, local_root: str, move_tree: Tree):
         test_position = position + direction
         next_position = position + 2*direction
         if test_position in LEGAL_POSITIONS:
@@ -111,14 +112,14 @@ class King(Piece):
     def __repr__(self):
         return self._text_color.value+'b '
 
-    def get_moves_uncommon(self, position, directions, direction, local_root, move_tree):
+    def get_moves_uncommon(self, position: int, direction: int, local_root: str, move_tree: Tree):
         contact = 0
         subtree = Tree()
         last_take = None
         last_move = None
-        
+
         visible_enemies = self.count_near_enemies(position, 8)
-        
+
         if visible_enemies:
             for test_position in range(position+direction, MAX_BOARD_INDEX+1 if direction > 0 else -1, direction):
                 if test_position in ILLEGAL_POSITIONS:
@@ -140,7 +141,7 @@ class King(Piece):
                             'move', direction, test_position))
 
                         self.get_moves(position=test_position, directions=[
-                                        x for x in self._moves if x != -direction], local_root=last_move, move_tree=subtree)
+                            x for x in self._moves if x != -direction], local_root=last_move, move_tree=subtree)
 
                 elif self._board[test_position] and self._board[test_position].color != self.color:
                     # pokud najednou najdeš nepřátelskou figurku, nastav flag 'contact' na jeho pozici
@@ -161,11 +162,11 @@ class King(Piece):
             for test_position in range(position+direction, MAX_BOARD_INDEX+1 if direction > 0 else -1, direction):
                 if test_position in ILLEGAL_POSITIONS:
                     # pokud je pozice neplatná, končíme
-                    break 
+                    break
                 if not self._board[test_position]:
                     last_move = f'move@{test_position}n{move_tree.size()}'
-                    move_tree.create_node(last_move, last_move, local_root, data=('move', direction, test_position))
+                    move_tree.create_node(last_move, last_move, local_root, data=(
+                        'move', direction, test_position))
                 else:
                     # je na poli figurka, končíme
                     break
-

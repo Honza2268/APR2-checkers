@@ -1,7 +1,6 @@
 from player import Player
 from pieces import Man, King
 from constants import Color
-from treelib import Node, Tree
 from utilities import *
 
 
@@ -40,8 +39,8 @@ class Game:
 
     def __str__(self, reverse=True, markings=True, numbers=False):
         c = [
-            f'\x1B[48;5;{"142" if (p%2)^(p//8%2) else "64"}m{self.board[p] if self.board[p] else "  " if not numbers else f"{p:02}"}\x1B[0m'
-             for p in range(64)]
+            f'\x1B[48;5;{"142" if (p%2)^(p//8%2) else "64"}m{self.board[p] if self.board[p] and not self.board[p]._captured else "  " if not numbers else f"{p:02}"}\x1B[0m'
+            for p in range(64)]
         l = [f'{(x+1) if markings else ""} '+''.join(c[x*8:x*8+8])
              for x in range(8)]
         return '\n'.join((['  A B C D E F G H'] if markings else []) + l[:: -1 if reverse else 1])
@@ -59,7 +58,8 @@ class Game:
         return row*8+col
 
     def save(self, filename):
-        data = {self.position_to_anotation(p.position): ('w' if p.color else 'b') * (1 if type(p) == Man else 2) for p in self.pieces}
+        data = {self.position_to_anotation(p.position): (
+            'w' if p.color else 'b') * (1 if type(p) == Man else 2) for p in self.pieces}
         save_dict_csv(data, filename)
 
     def load_layout(self, filename):
@@ -74,15 +74,14 @@ class Game:
             p.place_on(self.board, position)
             if len(piece) == 2:
                 self.promote_piece(p, True)
-    
+
     def get_piece_moves(self, piece):
         tree = piece.get_moves()
-        
+
         paths = tree.paths_to_leaves()
-        
+
         return paths
-    
-    
+
     def make_move(self, piece, move_id):
         piece.vis_moves()
         #TODO: this
@@ -91,9 +90,9 @@ class Game:
 if __name__ == "__main__":
     g = Game((Player(Color(0)), Player(Color(1))))
     try:
-        g.load_layout('../test_e.csv')
+        g.load_layout('../test2.csv')
     except:
-        g.load_layout('test_e.csv')
+        g.load_layout('test2.csv')
     g.d_print()
     #g.make_move(g.pieces[0], 0)
     '''for l in g.get_piece_moves(g.pieces[0]):
