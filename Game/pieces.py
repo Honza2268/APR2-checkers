@@ -79,7 +79,7 @@ class Man(Piece):
         return False
 
     def __repr__(self):
-        return self._text_color.value+'a '
+        return self._text_color.value+'a ' if not self._captured else '  '
 
     def get_moves_uncommon(self, position: int, direction: int, local_root: str, move_tree: Tree):
         test_position = position + direction
@@ -110,7 +110,7 @@ class King(Piece):
         self._moves = Moves.KING.value
 
     def __repr__(self):
-        return self._text_color.value+'b '
+        return self._text_color.value+'b ' if not self._captured else '  '
 
     def get_moves_uncommon(self, position: int, direction: int, local_root: str, move_tree: Tree):
         contact = 0
