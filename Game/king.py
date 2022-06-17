@@ -1,7 +1,6 @@
 from enum import Enum, IntEnum
 from abc import ABC, abstractmethod
-from re import I
-from turtle import position
+from turtle import pos
 
 from numpy import true_divide
 
@@ -98,52 +97,38 @@ class King(Piece):
     
     number_of_rows = 8
     
-    def __init__(self, man):
+    def __init__(self, man: Man):
         super().__init__(man.color, man.position, man._board)
         self._moves = Moves.KING.value    
-
-    def get_moves(self, position=None, taken=[position]):
-        moves = []
-        contact = False
-        if self._taken:
-            return moves
-        if position == None:
-            position = self.position
-            moves.append(('start', position))
-        for direction in self._moves:
-            contact = False
-            for new_position in range(position+direction,64 if direction>0 else -1,direction):
-                if new_position>63 or abs((new_position-direction)%8 - new_position % 8 )!=1 or new_position<0 or new_position in taken:
-                    break
-                if not self._board[new_position]:
-                    if position == self.position:
-                        moves.append(('move', direction, new_position))
-                    elif contact:
-                        if new_position != self.position:
-                            moves.append(('move', direction, new_position))
-                    if contact:
-                        taken.append(new_position)
-                        moves_in_recursion = self.get_moves(position= new_position,taken=taken)
-                        if moves_in_recursion != []:
-                            moves.append((new_position,moves_in_recursion))
-                    contact = False
-                elif self._board[new_position].color == self.color:
-                    break
-                elif self._board[new_position].color != self.color and new_position not in taken:
-                    taken.append(new_position)
-                    if contact == True:
-                        break
-                    contact = True
-        return moves
     
-    def checking_new_postion(self,new_position,direction):
-        if new_position<len(self._board) and new_position>=0: #kontrola jestli nová pozice figurky není mimo hrací desku
-           print(new_position, "Prošlo první kontrolou")
-           if (abs((new_position-direction)%self.number_of_rows - new_position % self.number_of_rows) <= 1): #kontrola jestli předchozí pozice a nová pozci jsou sloupce vedle sebe               
-                print(new_position, "prošlo druhou kontrolou")
-                return True
-        print(new_position,"neprošlo kontrolou")       
-        return False
+    def get_moves(self, position=None, directions=None):
+        move_list = []
+        if not directions:
+            directions = self._moves
+       
+        if not position:
+            position = self.position            
         
+        for direction in directions:
+            new_position = position+direction 
+            while new_position<64 and new_position>-1:
+                if direction<0:
+                    print(new_position, "Direction je menší jak 0")
+                    new_position += direction
+                else:
+                    print(new_position,"direction je větši jak 0")
+                    if abs(new_position % 8 - position%8) == 1:
+                        print(new_position, "prošlo to podmínkou")
+                        if not self._board[new_position]:
+                            print(new_position, "políčko je prázdný")
+                            move_list.append(f"OLD: {position}  NEW:  {new_position}")
+                            new_position += direction
+                            
+        return move_list
     def __repr__(self):
         return self._text_color.value+'b '
+                            
+                        
+                    
+                    
+    

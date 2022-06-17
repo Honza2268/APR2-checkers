@@ -34,8 +34,9 @@ class Game:
     def print_numbers(self): print(self.__str__(numbers=True))
     def print(self): print(self.__str__())
     def __str__(self, reverse=True, markings=True, numbers=False):
-        c = [f'\x1B[48;5;{"142" if (p%2)^(p//8%2) else "64"}m{self.board[p] if self.board[p] else "  " if not numbers else f"{p:02}"}\x1B[0m' for p in range(64)]
-        l = [f'{(x+1) if markings else ""} '+''.join(c[x*8:x*8+8]) for x in range(8)]
+        c = [f'\x1B[48;5;{"142" if (p%2)^(p//8%2) else "64"}m{self.board[p] if self.board[p] and not self.board[p]._taken else "  " if not numbers else f"{p:02}"}\x1B[0m'for p in range(64)]
+        l = [f'{(x+1) if markings else ""} '+''.join(c[x*8:x*8+8])
+             for x in range(8)]
         return '\n'.join((['  A B C D E F G H'] if markings else []) + l[:: -1 if reverse else 1])
     
     def position_to_anotation(self, position):
