@@ -124,8 +124,6 @@ class King(Piece):
         return tree
 
     def cyklus_direction_loop(self, position, direction, taken, tree, last_parent):
-        last_move = None
-        last_take = None
         for new_position in (range(position+direction, 64 if direction > 0 else -1, direction)):
             if self.checking_new_postion(new_position, direction, taken):
 
