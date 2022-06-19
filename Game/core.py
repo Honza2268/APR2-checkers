@@ -1,5 +1,5 @@
 from player import Player
-from pawns import Man, King, Color
+from pieces import Man, King, Color
 import csv
 
 class Game:
@@ -81,7 +81,7 @@ class Game:
             
 if __name__ == "__main__":
     g = Game((Player(Color(0)), Player(Color(1))))
-    g.load('../test1.csv')
+    g.load('test1.csv')
   #  g.print()
     print(g.__str__(numbers=True))
     print(g.pieces[0].get_moves())
