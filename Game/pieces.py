@@ -103,7 +103,7 @@ class King(Piece):
         super().__init__(man.color, man.position, man._board)
         self._moves = Moves.KING.value
 
-    def get_move_tree(self, position=None, taken=None, tree=None, last_parent=None):
+    def get_moves(self, position=None, taken=None, tree=None, last_parent=None):
         if self._taken:
             return False
 

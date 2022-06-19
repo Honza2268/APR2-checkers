@@ -81,7 +81,6 @@ class Game:
             
 if __name__ == "__main__":
     g = Game((Player(Color(0)), Player(Color(1))))
-    g.load('test1.csv')
-  #  g.print()
+    g.load('test1.csv')  
     print(g.__str__(numbers=True))
     print(g.pieces[0].get_moves())
