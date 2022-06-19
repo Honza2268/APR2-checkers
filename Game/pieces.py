@@ -135,14 +135,9 @@ class King(Piece):
                 if self._board[new_position].color != self.color:
                     # figurka na pozici new_postion má jinou barvu
                     if self.checking_new_postion(new_position+direction, direction, taken) and\
-                            self._board[new_position+direction] == None:  # pozice za figurkou je volná a platná
-                        last_take = f"take {new_position} uid{tree.size()}"
-                        tree.create_node(last_take, last_take, last_parent)
-                        last_move = f"move {new_position+direction} uid{tree.size()}"
-                        tree.create_node(last_move, last_move, last_take)
-                        taken.append(new_position)
-                        self.get_moves(new_position+direction,
-                                       taken.copy(), tree, last_move)
+                            self._board[new_position+direction] == None:  # pozice za figurkou je volná a platná                        
+                        
+                        self.tree_adding(new_position,direction, taken, tree, last_parent)               
                         return
 
                     else:
@@ -160,6 +155,14 @@ class King(Piece):
                 if new_position not in taken:
                     return True
         return False
+    
+    def tree_adding(self,new_position,direction, taken, tree, last_parent):
+        last_take = f"take {new_position} uid{tree.size()}"
+        tree.create_node(last_take, last_take, last_parent)
+        last_move = f"move {new_position+direction} uid{tree.size()}"
+        tree.create_node(last_move, last_move, last_take)
+        taken.append(new_position)
+        self.get_moves(new_position+direction, taken.copy(), tree, last_move)
 
     def __repr__(self):
         return self._text_color.value+'b '
