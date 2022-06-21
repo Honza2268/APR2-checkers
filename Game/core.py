@@ -5,7 +5,7 @@ from utilities import *
 
 
 class Game:
-    def __init__(self, players, starting_player=1):
+    def __init__(self, players: tuple[Player, Player], starting_player=1):
         self.players = players
         self.current_player: Player
         self.next_player: Player
@@ -44,7 +44,7 @@ class Game:
             f'\x1B[48;5;{"142" if (p%2)^(p//8%2) else "64"}m{payload[p] if payload[p] else "  " if not numbers else f"{p:02}"}\x1B[0m'
             for p in range(64)]
         lines = [f'{(x+1) if markings else ""} '+''.join(columns[x*8:x*8+8])
-             for x in range(8)]
+                 for x in range(8)]
         return '\n'.join((['  A B C D E F G H'] if markings else []) + lines[:: -1 if reverse else 1])
 
     def position_to_anotation(self, position):
@@ -80,7 +80,7 @@ class Game:
             assert piece < len(self.pieces), 'Invalid piece index'
             piece = self.pieces[piece]
 
-        tree = piece.get_moves()
+        tree = piece._last_move_tree if piece._last_move_tree else piece.get_moves()
 
         paths = tree.paths_to_leaves()
 
@@ -91,7 +91,7 @@ class Game:
             assert piece < len(self.pieces), 'Invalid piece index'
             piece = self.pieces[piece]
 
-        return piece.get_moves()
+        return piece._last_move_tree if piece._last_move_tree else piece.get_moves()
 
     def make_move(self, piece: int | Piece, move_id: int, visualize=False):
         if type(piece) == int:
@@ -101,7 +101,7 @@ class Game:
         moves = self.get_piece_moves(piece)
         move_tree = self.get_piece_move_tree(piece)
         assert move_id < len(moves), 'Invalid move id'
-        
+
         steps = [move_tree.get_node(node).data for node in moves[move_id]]
 
         if visualize:
@@ -120,28 +120,27 @@ class Game:
 
     def visualize_move(self, steps: list, reverse=True, markings=True, numbers=False):
         visual = self.board.copy()
-        
-        dts = {7: '↖', 9: '↗', -9: '↙', -7: '↘'}
-        
+
         last_command = None
         last_position = None
-        
+
         for command, direction, position in steps:
             match command:
                 case 'start':
-                    visual[position] = visual[position].__str__().strip()+'\x1B[1m\x1B[38;5;1mO\x1B[22m'
+                    visual[position] = visual[position].__str__(
+                    ).strip()+'\x1B[1m\x1B[38;5;1mO\x1B[22m'
                 case 'move':
                     visual[position] = '\x1B[1m\x1B[38;5;1m O\x1B[22m'
                 case 'take':
-                    visual[position] = visual[position].__str__().strip()+f'\x1B[1m\x1B[38;5;1m{dts[direction]}\x1B[22m'
+                    visual[position] = visual[position].__str__().strip(
+                    )+f'\x1B[1m\x1B[38;5;1m{DIRECTION_SYMBLOS[direction]}\x1B[22m'
             last_command = command
-            if last_command in ('move', 'take') and abs(position-last_position)%8 > 1:
+            if last_command in ('move', 'take') and abs(position-last_position) % 8 > 1:
                 for inbetween_position in range(last_position+direction, position, direction):
-                    visual[inbetween_position] = f'\x1B[1m\x1B[38;5;1m {dts[direction]}\x1B[22m'
+                    visual[inbetween_position] = f'\x1B[1m\x1B[38;5;1m {DIRECTION_SYMBLOS[direction]}\x1B[22m'
             last_position = position
-                    
-        return self.__str__(reverse=reverse, markings=markings, numbers=numbers, payload=visual)
 
+        return self.__str__(reverse=reverse, markings=markings, numbers=numbers, payload=visual)
 
 if __name__ == "__main__":
     g = Game((Player(Color(0)), Player(Color(1))))
@@ -155,9 +154,18 @@ if __name__ == "__main__":
 
     g.debug_print()
 
-    #print('\nTree:\n', g.get_piece_move_tree(0))
-    #print('\nMoves:\n', g.get_piece_moves(0))
-    
-    g.make_move(0, 4, True)
+    '''for i in range(len(g.get_piece_moves(0))):
+        try:
+            g.load_layout(f'layouts/{layout}.csv')
+        except:
+            g.load_layout(f'Game/layouts/{layout}.csv')
+        g.make_move(0, i, True)'''
+    # g.debug_print()
+
+    print('\nTree:\n' + str(g.get_piece_move_tree(0)))
+    print('\nTree:\n' + str(g.get_piece_move_tree(5)))
+    #print('\nMoves:\n')
+    '''for m in g.get_piece_moves(0):
+        print(m)'''
 
     g.print()

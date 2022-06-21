@@ -2,3 +2,5 @@
 /Game/__pycache__
 /.kanbn
 /.ignored
+/.vscode/settings.json
+runDebug.bat
