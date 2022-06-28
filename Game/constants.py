@@ -13,6 +13,7 @@ LEGAL_POSITIONS = list(x for x in range(64) if not (x % 2) ^ (x // 8 % 2))
 
 DIRECTION_SYMBLOS = {7: '↖', 9: '↗', -9: '↙', -7: '↘'}
 
+ESCAPE_CHAR = '[' #'\x1B['
 #===============Utility=Constants================#
 
 
@@ -60,18 +61,18 @@ class Color(IntEnum):
     WHITE = 1
 
 class Color_code(Enum):
-    BLACK = '\x1B[38;5;16m'
-    WHITE = '\x1B[38;5;15m'
+    BLACK = f'{ESCAPE_CHAR}38;5;16m'
+    WHITE = f'{ESCAPE_CHAR}38;5;15m'
 
 class Moves(Enum):
-    BLACK = [7, 9]
-    WHITE = [-9, -7]
+    BLACK = [-9, -7]
+    WHITE = [7, 9]
     KING = [7, 9, -9, -7]
 
 
 class King_zone(Enum):
-    BLACK = range(48, 64)
-    WHITE = range(16)
+    BLACK = range(16)
+    WHITE = range(48, 64)
 
 class ALPHANUM(Enum):
     a = 1

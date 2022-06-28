@@ -12,7 +12,7 @@ def save_dict_csv(data, filename):
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f, delimiter=',')
         for k, v in data.items():                        
-            writer.writerow((k,v))
+            writer.writerow((k,*v))
 
 
 def load_dict_csv(filename):
@@ -20,12 +20,12 @@ def load_dict_csv(filename):
     with open(filename, 'r', newline='') as f:
         reader = csv.reader(f, delimiter=',')
         for row in reader:
-            data[row[0]] = row[1]
+            data[row[0]] = row[1:]
     return data
 
 
 def clear_screen():
-    print('\x1B[H\x1B[2J', end='')
+    print(f'{ESCAPE_CHAR}H{ESCAPE_CHAR}2J', end='')
 
 
 def get_boxed_text(content: str | list, width: int = 0, height: int = 0, line_set: Line_Types = ascii_light):
@@ -72,3 +72,6 @@ def get_boxed_text(content: str | list, width: int = 0, height: int = 0, line_se
 
 def get_terminal_size():
     return shutil.get_terminal_size((80, 20))
+
+def count(function, iterable):
+    return len(list(filter(function, iterable)))

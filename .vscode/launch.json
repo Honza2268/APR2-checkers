@@ -35,6 +35,22 @@
             "program": "${workspaceFolder}/Game/core.py",
             "console": "externalTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: game.py in integrated terminal",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/Game/game.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: game.py in external terminal",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/Game/game.py",
+            "console": "externalTerminal",
+            "justMyCode": true
         }
     ]
 }

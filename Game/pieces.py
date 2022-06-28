@@ -30,6 +30,7 @@ class Piece(ABC):
         return near_enemies
 
     def get_moves_common(self, position: int, used: list, local_root: str, move_tree: Tree):
+        
         if move_tree is None:
             move_tree = Tree()
 
@@ -60,6 +61,9 @@ class Piece(ABC):
         position, used, local_root, move_tree = self.get_moves_common(
             position, used, local_root, move_tree)
 
+        if self._captured:
+            return(move_tree)
+        
         for direction in directions:
 
             self.get_moves_uncommon(
@@ -86,14 +90,16 @@ class Man(Piece):
             return True
         return False
 
-    def __repr__(self):
-        return self._text_color.value+'a ' if self._captured is False else '  '
+    def __str__(self):
+        #return self._text_color.value+'\ ' if self._captured is False else '  '
+        return '\u2659 ' if self.color else '\u265f '
 
     def get_moves_uncommon(self, position: int, direction: int, local_root: str, move_tree: Tree, used: list, blocked: bool):
         test_position = position + direction
         next_position = position + 2*direction
         if test_position in LEGAL_POSITIONS:
             # pokud je pozice platná...
+            visible_enemies = self.count_near_enemies()
             if self._board[test_position] and self._board[test_position].color != self.color:
                 # a pokud na pozici je nepřátelská figurka
                 last_take_tag = f'{test_position}{DIRECTION_SYMBLOS[direction]}'
@@ -108,9 +114,9 @@ class Man(Piece):
                         move_tree.create_node(last_take_tag, last_take, local_root, data=(
                             'take', direction, test_position))
                         move_tree.create_node(last_move_tag, last_move, last_take, data=(
-                            'move', direction, test_position))
+                            'move', direction, next_position))
 
-            elif self._board[test_position] is None and (self.count_near_enemies() == 0 or blocked):
+            elif self._board[test_position] is None and (visible_enemies == 0 or blocked):
                 # a v blízkosti nejsou nepřátelé, přidej tah do možných tahů
                 last_move_tag = f'{test_position}{DIRECTION_SYMBLOS[direction]}'
                 last_move = str(uuid1())
@@ -123,8 +129,9 @@ class King(Piece):
         super().__init__(man.color, man.position, man._board)
         self._moves = Moves['KING'].value
 
-    def __repr__(self):
-        return self._text_color.value+'b ' if self._captured is False else '  '
+    def __str__(self):
+        #return self._text_color.value+'b ' if self._captured is False else '  '
+        return '\u2654 ' if self.color else '\u265a '
 
     def get_moves_uncommon(self, position: int, direction: int, local_root: str, move_tree: Tree, used: list, blocked: bool):
         contact = None

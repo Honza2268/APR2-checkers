@@ -14,22 +14,25 @@ class Game:
         self.pieces = []
         self.history = []
 
-    def new_game(self):
+    def new_game(self, rows = 3):
         self.board = [None] * 64
         self.pieces = []
+        self.history = []
 
         self.current_player = self.players[0]
         self.next_player = self.players[1]
 
-        self.pieces = [Man(Color(i//8)) for i in range(16)]
+        self.pieces = [Man(Color(not i//(rows*4))) for i in range(rows*8)]
 
         for i, p in enumerate(self.pieces):
-            p.place_on(self.board, (i*2)+1*(i//4 % 2)+32*(i//8))
+            p.place_on(self.board, (i*2)+1*(i//4 % 2)+(16*(4-rows))*(i//(rows*4)))
 
     def swap_active_players(self):
         self.current_player, self.next_player = self.next_player, self.current_player
 
     def promote_piece(self, piece, force=False):
+        if isinstance(self, King):
+            return False
         if piece.position in piece._king_zone or force:
             k = King(piece)
             piece._board[piece.position] = k
@@ -37,7 +40,6 @@ class Game:
             return True
         return False
 
-    def print_numbers(self): print(self.__str__(numbers=True))
     def print(self): print(self.__str__())
     def debug_print(self): print(self.__str__(numbers=True))
 
@@ -45,7 +47,7 @@ class Game:
         if not payload:
             payload = self.board
         columns = [
-            f'\x1B[48;5;{"142" if (p%2)^(p//8%2) else "64"}m{payload[p] if payload[p] else "  " if not numbers else f"{p:02}"}\x1B[0m'
+            f'{ESCAPE_CHAR}48;5;{"142" if (p%2)^(p//8%2) else "64"}m{payload[p] if payload[p] else "  " if not numbers else f"{p:02}"}{ESCAPE_CHAR}0m'
             for p in range(64)]
         lines = [f'{(x+1) if markings else ""} '+''.join(columns[x*8:x*8+8])
                  for x in range(8)]
@@ -69,9 +71,11 @@ class Game:
     def load_layout(self, filename):
         self.board = [None] * 64
         self.pieces = []
+        self.history = []
 
         data = load_dict_csv(filename)
         for anotation, piece in data.items():
+            piece = piece[0]
             position = self.anotation_to_position(anotation)
             p = Man(Color(0 if 'b' in piece else 1))
             self.pieces.append(p)
@@ -121,15 +125,38 @@ class Game:
                     piece.position = position
                 case 'take':
                     self.board[position]._captured = True
+                    self.board[position] = None
         piece._last_move_tree = None
+        self.promote_piece(piece)
         return True
     
     def add_to_history(self,piece, steps):
-        self.history.append((piece.position,steps))
+        self.history.append((piece.position, steps))
     
     def save_history(self,filename='history.csv'):
         history = {i: self.history[i] for i in range(len(self.history))}
-        save_dict_csv(history,filename)
+        save_dict_csv(history, filename)
+        
+    def load_history(self,filename='history.csv'):
+        history = load_dict_csv(filename)
+        for key in history.keys():
+            turn = history[key]
+            start_pos, steps = int(turn[0]), eval(turn[1])
+            piece = self.board[start_pos]
+            self.add_to_history(piece,steps)
+            for command, direction, position in steps:
+                match command:
+                    case 'start':
+                        ...
+                    case 'move':
+                        self.board[position], self.board[piece.position] = piece, None
+                        piece.position = position
+                    case 'take':
+                        self.board[position]._captured = True
+                        self.board[position] = None
+        if len(history)%2:
+            self.swap_active_players()
+        
 
     def visualize_move(self, steps: list, reverse=True, markings=True, numbers=False):
         visual = self.board.copy()
@@ -141,37 +168,37 @@ class Game:
             match command:
                 case 'start':
                     visual[position] = visual[position].__str__(
-                    ).strip()+'\x1B[1m\x1B[38;5;1mO\x1B[22m'
+                    ).strip()+f'{ESCAPE_CHAR}1m{ESCAPE_CHAR}38;5;1mO{ESCAPE_CHAR}22m'
                 case 'move':
-                    visual[position] = '\x1B[1m\x1B[38;5;1m O\x1B[22m'
+                    visual[position] = f'{ESCAPE_CHAR}1m{ESCAPE_CHAR}38;5;1m O{ESCAPE_CHAR}22m'
                 case 'take':
                     visual[position] = visual[position].__str__().strip(
-                    )+f'\x1B[1m\x1B[38;5;1m{DIRECTION_SYMBLOS[direction]}\x1B[22m'
+                    )+f'{ESCAPE_CHAR}1m{ESCAPE_CHAR}38;5;1m{DIRECTION_SYMBLOS[direction]}{ESCAPE_CHAR}22m'
             last_command = command
             if last_command in ('move', 'take') and abs(position-last_position) % 8 > 1:
                 for inbetween_position in range(last_position+direction, position, direction):
-                    visual[inbetween_position] = f'\x1B[1m\x1B[38;5;1m {DIRECTION_SYMBLOS[direction]}\x1B[22m'
+                    visual[inbetween_position] = f'{ESCAPE_CHAR}1m{ESCAPE_CHAR}38;5;1m {DIRECTION_SYMBLOS[direction]}{ESCAPE_CHAR}22m'
             last_position = position
 
         return self.__str__(reverse=reverse, markings=markings, numbers=numbers, payload=visual)
 
 if __name__ == "__main__":
-    g = Game((Player(Color(0)), Player(Color(1))))
+    g = Game((Player(Color(0), 'a'), Player(Color(1), 'b')))
 
     layout = 'test_multi_take'
 
     try:
         g.load_layout(f'layouts/{layout}.csv')
     except:
-        g.load_layout(f'Game/layouts/{layout}.csv')
+        g.load_layout(f'layouts/{layout}.csv')
 
-    for i in range(len(g.get_piece_moves(0))):
+    '''for i in range(len(g.get_piece_moves(0))):
         try:
             g.load_layout(f'layouts/{layout}.csv')
         except:
             g.load_layout(f'Game/layouts/{layout}.csv')
-        g.make_move(0, i, True)
-    #g.debug_print()
+        g.make_move(0, i, True)'''
+    g.debug_print()
 
     '''for i in range(len(g.get_piece_moves(0))):
         try:

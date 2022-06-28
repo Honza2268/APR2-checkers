@@ -3,10 +3,53 @@ from player import *
 from utilities import *
 from constants import *
 
+def command_mode(game):
+    clear_screen()
+    print('Welcom to command mode!\nType `h` for aviable commands\n')
+    commanding = True
+    while commanding:
+        command = input('> ')
+
+        match command.split(' '):
+            case ['h']:
+                print('save, load, save_history, restart, quit, clear, continue')
+            case ['save']:
+                print('Usage: save *file name*')
+            case ['save', fn]:
+                game.save(fn)
+                print(f'File {fn} saved')
+            case ['load']:
+                print('Usage: load *file name*')
+            case ['load', fn]:
+                game.load_layout(fn)
+                print(f'File {fn} loaded')
+            case ['save_history']:
+                game.save_history()
+                print('File history.csv saved')
+            case ['save_history', fn]:
+                print(f'File {fn} saved')
+                game.save_history(fn)
+            case ['load_history']:
+                print('File history.csv loaded')
+                game.load_history()
+            case ['load_history', fn]:
+                print(f'File {fn} loaded')
+                game.load_history(fn)
+            case ['restart']:
+                game.new_game()
+                print('New game started')
+            case ['quit']:
+                exit()
+            case ['clear']:
+                clear_screen()
+            case ['continue']|['/']:
+                commanding = False
+            case _:
+                print('Invalid command')
 
 def main():
-    p1n = input('Player 1 name:\n')
-    p2n = input('Player 2 name:\n')
+    p1n = input('Player 1 name:\n> ')
+    p2n = input('Player 2 name:\n> ')
     
     player1 = Player(Color['WHITE'], p1n)
     player2 = Player(Color['BLACK'], p2n)
@@ -14,15 +57,101 @@ def main():
     g = Game((player1, player2))
     g.new_game()
 
-    while True:
+    playing = True
+    while playing:
         clear_screen()
+        print(f'Player: {g.current_player.name} ({g.current_player.color.name})\n')
         g.print()
         
-        print(f'Player: {g.current_player.name}')
+        print('Select piece (coordiantes eg.: a5), or type `/` for command mode:')
         
-        input()
-
-        g.swap_active_players()
+        selecting = True
+        while selecting:
+            piece = None
+            selected_coordinates = input('> ').strip().casefold()
+            
+            if selected_coordinates.strip() == "/":
+                command_mode(g)                
+                break
+            try:
+                selected_position = g.anotation_to_position(selected_coordinates.strip())
+            except:
+                print('Invalid coordinates, try agin')
+                continue
+            
+            match g.board[selected_position]:
+                case None:
+                    print('Empty space, try agin')
+                case p if g.get_piece_move_tree(p).size() <= 1:
+                    print('This piece cannot move, try agin')
+                case piece if piece.color == g.current_player.color:
+                    selecting = False
+                case p if p.color != g.current_player.color:
+                    print('Enemy piece, try agin')
+        
+        if piece == None:
+            continue
+        
+        piece._last_move_tree = None
+        moves = g.get_piece_moves(piece)
+        move_tree = g.get_piece_move_tree(piece)
+        move_visualization = []
+        
+        for i in range(len(moves)):
+            steps = [move_tree.get_node(node).data for node in moves[i]]
+            move_visualization.append(g.visualize_move(steps).split('\n'))
+            move_visualization[i].insert(0, f'Move {i+1}:'.ljust(18))
+        
+        rotated_vis = [[move_visualization[j][i] for j in range(len(move_visualization))] for i in range(len(move_visualization[0])-1,-1,-1)]
+        
+        clear_screen()
+        print('Aviable moves:')
+        
+        max_moves = 5
+        multilne = (len(moves) // max_moves) +1
+        
+        for i in range(multilne):    
+            finalmove = min(max_moves*(i+1), len(moves))
+            for line in rotated_vis[::-1]:
+                print('\t'.join(line[max_moves*i:finalmove]))
+        
+                
+        
+        print('Sellect move number, or `d` to sellect different piece:')
+        selecting = True
+        while selecting:
+            selelected_move = input('> ').strip().casefold()
+            if selelected_move == 'd':
+                break
+            try:
+                selelected_move = int(selelected_move)
+            except ValueError:
+                print(f'{selelected_move} is not a number')
+                continue
+            selelected_move -= 1
+            if not 0 <= selelected_move < len(moves):
+                print('Invalid move number, try agin')
+                continue
+            else:
+                selecting = False
+                g.make_move(piece, selelected_move)            
+        if selecting:
+            continue
+        
+        active_pieces = count(lambda x: g.get_piece_move_tree(x).size() > 1 and (not x._captured) and x.color == g.current_player.color, g.pieces)
+        if active_pieces == 0:
+            playing = False
+        else:
+            g.swap_active_players()
+    
+    clear_screen()
+    print(f'Player {g.current_player.name} won!')
+    save_q = input('Save replay? (y/n):\n> ')
+    
+    if save_q.strip().casefold() == 'y':
+        fn = input('Enter file name (default is `history.csv`):\n> ')
+        g.save_history(fn)
+        
 
 if __name__ == '__main__':
     main()
