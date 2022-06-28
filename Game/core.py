@@ -1,4 +1,3 @@
-from matplotlib.pyplot import step
 from player import Player
 from pieces import Man, King, Piece
 from constants import *
@@ -6,7 +5,7 @@ from utilities import *
 
 
 class Game:
-    def __init__(self, players: tuple[Player, Player], starting_player=1):
+    def __init__(self, players: tuple[Player, Player]):
         self.players = players
         self.current_player: Player
         self.next_player: Player
@@ -19,13 +18,16 @@ class Game:
         self.board = [None] * 64
         self.pieces = []
 
-        self.current_player = self.player[0]
-        self.next_player = self.player[1]
+        self.current_player = self.players[0]
+        self.next_player = self.players[1]
 
         self.pieces = [Man(Color(i//8)) for i in range(16)]
 
         for i, p in enumerate(self.pieces):
             p.place_on(self.board, (i*2)+1*(i//4 % 2)+32*(i//8))
+
+    def swap_active_players(self):
+        self.current_player, self.next_player = self.next_player, self.current_player
 
     def promote_piece(self, piece, force=False):
         if piece.position in piece._king_zone or force:
@@ -163,7 +165,13 @@ if __name__ == "__main__":
     except:
         g.load_layout(f'Game/layouts/{layout}.csv')
 
-    g.debug_print()
+    for i in range(len(g.get_piece_moves(0))):
+        try:
+            g.load_layout(f'layouts/{layout}.csv')
+        except:
+            g.load_layout(f'Game/layouts/{layout}.csv')
+        g.make_move(0, i, True)
+    #g.debug_print()
 
     '''for i in range(len(g.get_piece_moves(0))):
         try:
@@ -171,14 +179,6 @@ if __name__ == "__main__":
         except:
             g.load_layout(f'Game/layouts/{layout}.csv')
         g.make_move(0, i, True)'''
-    
-    g.make_move(0,0)
-    g.make_move(0,0)
-    g.make_move(0,0)
-    g.make_move(0,0)
-    g.make_move(0,0)
-    g.make_move(0,0)
-    g.save_history()    
     # g.debug_print()
 
     #print('\nTree:\n' + str(g.get_piece_move_tree(0)))
@@ -186,5 +186,5 @@ if __name__ == "__main__":
     #print('\nMoves:\n')
     '''for m in g.get_piece_moves(0):
         print(m)'''
-
-    #g.print()
+    g.make_move(0,2)
+    g.print()

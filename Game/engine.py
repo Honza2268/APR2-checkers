@@ -68,7 +68,7 @@ class Annotation:
         row = self.board._get_row(p) + 1
 
         letters = []
-
+        
         while column:
             letters.append(chr(96 + column % 26))
             column //= 26
@@ -113,7 +113,7 @@ class Move:
 
 
 if __name__ == '__main__':
-    b = Board(100, 1)
+    b = Board(8, 8)
     a = b.annotation << (29, 0)
     print(a)
     print(b.annotation >> a)

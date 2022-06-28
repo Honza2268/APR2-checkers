@@ -49,15 +49,19 @@ ascii_curved = Line_Types.ascii_curved
 #=====================Enums======================#
 
 
+ascii_light = Line_Types.ascii_light
+ascii_heavy = Line_Types.ascii_heavy
+ascii_double = Line_Types.ascii_double
+ascii_curved = Line_Types.ascii_curved
+
+#=====================Enums======================#
 class Color(IntEnum):
     BLACK = 0
     WHITE = 1
 
-
 class Color_code(Enum):
     BLACK = '\x1B[38;5;16m'
     WHITE = '\x1B[38;5;15m'
-
 
 class Moves(Enum):
     BLACK = [7, 9]
@@ -68,7 +72,6 @@ class Moves(Enum):
 class King_zone(Enum):
     BLACK = range(48, 64)
     WHITE = range(16)
-
 
 class ALPHANUM(Enum):
     a = 1

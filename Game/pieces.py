@@ -177,7 +177,6 @@ class King(Piece):
 
                 move_tree.paste(local_root, subtree)
                 
-
         else:
             # pokud nejsou žádné nepřátelské figurky v blízkosti, přidej tahy do možných tahů
             for test_position in range(position+direction, MAX_BOARD_INDEX+1 if direction > 0 else -1, direction):
