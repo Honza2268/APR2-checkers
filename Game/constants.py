@@ -64,8 +64,8 @@ class Color_code(Enum):
     WHITE = '\x1B[38;5;15m'
 
 class Moves(Enum):
-    BLACK = [7, 9]
-    WHITE = [-9, -7]
+    BLACK = [-7, -9]
+    WHITE = [9, 7]
     KING = [7, 9, -9, -7]
 
 
