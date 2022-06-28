@@ -1,3 +1,4 @@
+from matplotlib.pyplot import step
 from player import Player
 from pieces import Man, King, Piece
 from constants import *
@@ -12,6 +13,7 @@ class Game:
 
         self.board = [None] * 64
         self.pieces = []
+        self.history = []
 
     def new_game(self):
         self.board = [None] * 64
@@ -107,6 +109,7 @@ class Game:
         if visualize:
             print(self.visualize_move(steps))
 
+        self.add_to_history(piece,steps)
         for command, direction, position in steps:
             match command:
                 case 'start':
@@ -116,7 +119,15 @@ class Game:
                     piece.position = position
                 case 'take':
                     self.board[position]._captured = True
+        piece._last_move_tree = None
         return True
+    
+    def add_to_history(self,piece, steps):
+        self.history.append((piece.position,steps))
+    
+    def save_history(self,filename='history.csv'):
+        history = {i: self.history[i] for i in range(len(self.history))}
+        save_dict_csv(history,filename)
 
     def visualize_move(self, steps: list, reverse=True, markings=True, numbers=False):
         visual = self.board.copy()
@@ -160,12 +171,20 @@ if __name__ == "__main__":
         except:
             g.load_layout(f'Game/layouts/{layout}.csv')
         g.make_move(0, i, True)'''
+    
+    g.make_move(0,0)
+    g.make_move(0,0)
+    g.make_move(0,0)
+    g.make_move(0,0)
+    g.make_move(0,0)
+    g.make_move(0,0)
+    g.save_history()    
     # g.debug_print()
 
-    print('\nTree:\n' + str(g.get_piece_move_tree(0)))
-    print('\nTree:\n' + str(g.get_piece_move_tree(5)))
+    #print('\nTree:\n' + str(g.get_piece_move_tree(0)))
+    #print('\nTree:\n' + str(g.get_piece_move_tree(5)))
     #print('\nMoves:\n')
     '''for m in g.get_piece_moves(0):
         print(m)'''
 
-    g.print()
+    #g.print()

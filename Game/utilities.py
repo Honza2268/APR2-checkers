@@ -11,8 +11,8 @@ def debug_print(message):
 def save_dict_csv(data, filename):
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f, delimiter=',')
-        for k, v in data:
-            writer.writerow(f'{k},{v}')
+        for k, v in data.items():                        
+            writer.writerow((k,v))
 
 
 def load_dict_csv(filename):
