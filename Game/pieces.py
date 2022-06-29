@@ -91,8 +91,8 @@ class Man(Piece):
         return False
 
     def __str__(self):
-        #return self._text_color.value+'\ ' if self._captured is False else '  '
-        return '\u2659 ' if self.color else '\u265f '
+        return self._text_color.value+'\u25cf '
+        #return '\u2659 ' if self.color else '\u265f '
 
     def get_moves_uncommon(self, position: int, direction: int, local_root: str, move_tree: Tree, used: list, blocked: bool):
         test_position = position + direction
@@ -130,8 +130,8 @@ class King(Piece):
         self._moves = Moves['KING'].value
 
     def __str__(self):
-        #return self._text_color.value+'b ' if self._captured is False else '  '
-        return '\u2654 ' if self.color else '\u265a '
+        return self._text_color.value+'\u25c9 '
+        #return '\u2654 ' if self.color else '\u265a '
 
     def get_moves_uncommon(self, position: int, direction: int, local_root: str, move_tree: Tree, used: list, blocked: bool):
         contact = None

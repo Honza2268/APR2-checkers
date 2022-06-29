@@ -26,10 +26,20 @@ class Game:
 
         for i, p in enumerate(self.pieces):
             p.place_on(self.board, (i*2)+1*(i//4 % 2)+(16*(4-rows))*(i//(rows*4)))
+        self.assign_pieces()
 
     def swap_active_players(self):
         self.current_player, self.next_player = self.next_player, self.current_player
 
+    def assign_pieces(self):
+        self.current_player.pieces = []
+        self.next_player.pieces = []
+        for p in self.pieces:
+            if p.color == self.current_player.color:
+                self.current_player.pieces.append(p)
+            else:
+                self.next_player.pieces.append(p)
+                
     def promote_piece(self, piece, force=False):
         if isinstance(self, King):
             return False
@@ -37,6 +47,7 @@ class Game:
             k = King(piece)
             piece._board[piece.position] = k
             self.pieces[self.pieces.index(piece)] = k
+            self.assign_pieces()
             return True
         return False
 
@@ -47,7 +58,7 @@ class Game:
         if not payload:
             payload = self.board
         columns = [
-            f'{ESCAPE_CHAR}48;5;{"142" if (p%2)^(p//8%2) else "64"}m{payload[p] if payload[p] else "  " if not numbers else f"{p:02}"}{ESCAPE_CHAR}0m'
+            f'{ESCAPE_CHAR}1;{COLOR_PRIMARY if (p%2)^(p//8%2) else COLOR_SECONDARY}m{payload[p] if payload[p] else "  " if not numbers else f"{p:02}"}{ESCAPE_CHAR}0m'
             for p in range(64)]
         lines = [f'{(x+1) if markings else ""} '+''.join(columns[x*8:x*8+8])
                  for x in range(8)]
@@ -82,6 +93,7 @@ class Game:
             p.place_on(self.board, position)
             if len(piece) == 2:
                 self.promote_piece(p, True)
+            self.assign_pieces()
 
     def get_piece_moves(self, piece: int | Piece):
         if type(piece) == int:

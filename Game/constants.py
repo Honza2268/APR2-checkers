@@ -14,6 +14,9 @@ LEGAL_POSITIONS = list(x for x in range(64) if not (x % 2) ^ (x // 8 % 2))
 DIRECTION_SYMBLOS = {7: '↖', 9: '↗', -9: '↙', -7: '↘'}
 
 ESCAPE_CHAR = '[' #'\x1B['
+
+COLOR_PRIMARY = 43
+COLOR_SECONDARY = 42
 #===============Utility=Constants================#
 
 
@@ -61,8 +64,8 @@ class Color(IntEnum):
     WHITE = 1
 
 class Color_code(Enum):
-    BLACK = f'{ESCAPE_CHAR}38;5;16m'
-    WHITE = f'{ESCAPE_CHAR}38;5;15m'
+    BLACK = f'{ESCAPE_CHAR}1;30m'
+    WHITE = f'{ESCAPE_CHAR}1;37m'
 
 class Moves(Enum):
     BLACK = [-9, -7]

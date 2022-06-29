@@ -2,6 +2,9 @@ from core import *
 from player import *
 from utilities import *
 from constants import *
+import random
+from colorama import init
+init()
 
 def command_mode(game):
     clear_screen()
@@ -49,7 +52,10 @@ def command_mode(game):
 
 def main():
     p1n = input('Player 1 name:\n> ')
-    p2n = input('Player 2 name:\n> ')
+    p2n = input('Player 2 name: (use `AUTO` to play against bot)\n> ')
+    
+    if p2n == 'AUTO':
+        automatic = True
     
     player1 = Player(Color['WHITE'], p1n)
     player2 = Player(Color['BLACK'], p2n)
@@ -59,6 +65,15 @@ def main():
 
     playing = True
     while playing:
+        
+        active_pieces = count(lambda x: g.get_piece_move_tree(x).size() > 1 and (not x._captured) and x.color == g.current_player.color, g.pieces)
+        if active_pieces == 0:
+            playing = False
+            break
+        else:
+            for p in g.pieces:
+                p._last_move_tree = None
+                
         clear_screen()
         print(f'Player: {g.current_player.name} ({g.current_player.color.name})\n')
         g.print()
@@ -138,9 +153,21 @@ def main():
         if selecting:
             continue
         
-        active_pieces = count(lambda x: g.get_piece_move_tree(x).size() > 1 and (not x._captured) and x.color == g.current_player.color, g.pieces)
-        if active_pieces == 0:
-            playing = False
+        if automatic:
+            bot_piece_tree_size = 0
+            while bot_piece_tree_size <= 1:
+                bot_piece = random.choice(g.next_player.pieces)
+                bot_piece_tree_size = g.get_piece_move_tree(bot_piece).size()
+            yet_to_move = True
+            bot_piece_moves = g.get_piece_moves(bot_piece)
+            while yet_to_move:
+                try:
+                    bot_piece_move = random.randint(0, len(bot_piece_moves))
+                    g.make_move(bot_piece, bot_piece_move)
+                    yet_to_move = False
+                except AssertionError:
+                    ...
+            
         else:
             g.swap_active_players()
     
