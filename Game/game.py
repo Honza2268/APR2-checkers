@@ -15,7 +15,7 @@ def command_mode(game):
 
         match command.split(' '):
             case ['h']:
-                print('save, load, save_history, restart, quit, clear, continue')
+                print('save: save current layout\nload: load layout from path\nsave_history: save current game as series of moves\nload_history: replay previously saved game\nrestart: start new game\nquit: exit the application\nclear: clear screen\ncontinue or `/`: retrun to game')
             case ['save']:
                 print('Usage: save *file name*')
             case ['save', fn]:
