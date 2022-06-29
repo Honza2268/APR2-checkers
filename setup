@@ -1,0 +1,11 @@
+#/bin/bash
+
+python3 -m pip --version
+
+if [ $? -eq 1 ]; then
+    python3 -m ensurepip --default_pip
+fi
+
+while read line; do
+    python3 -m pip install $line
+done < ./Game/requirements.txt

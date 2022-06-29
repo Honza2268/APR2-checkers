@@ -41,8 +41,9 @@ class Game:
                 self.next_player.pieces.append(p)
                 
     def promote_piece(self, piece, force=False):
-        if isinstance(self, King):
+        if isinstance(piece, King):
             return False
+        
         if piece.position in piece._king_zone or force:
             k = King(piece)
             piece._board[piece.position] = k
