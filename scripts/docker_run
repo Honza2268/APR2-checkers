@@ -3,3 +3,5 @@
 docker build -t checkers .
 
 docker run -it checkers
+
+docker stop checkers
