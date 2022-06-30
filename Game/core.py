@@ -126,7 +126,7 @@ class Game:
         steps = [move_tree.get_node(node).data for node in moves[move_id]]
 
         if visualize:
-            print(self.visualize_move(steps))
+            return self.visualize_move(steps)
 
         self.add_to_history(piece,steps)
         for command, direction, position in steps:

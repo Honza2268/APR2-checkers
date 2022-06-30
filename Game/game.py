@@ -54,8 +54,7 @@ def main():
     p1n = input('Player 1 name:\n> ')
     p2n = input('Player 2 name: (use `AUTO` to play against bot)\n> ')
     
-    if p2n == 'AUTO':
-        automatic = True
+    automatic = True if p2n == 'AUTO' else False
     
     player1 = Player(Color['WHITE'], p1n)
     player2 = Player(Color['BLACK'], p2n)
@@ -163,8 +162,12 @@ def main():
             while yet_to_move:
                 try:
                     bot_piece_move = random.randint(0, len(bot_piece_moves))
-                    g.make_move(bot_piece, bot_piece_move)
+                    visual = g.make_move(bot_piece, bot_piece_move, True)
                     yet_to_move = False
+                    clear_screen()
+                    print('Bot made this move:\n')
+                    print(visual)
+                    input('(Press Enter to continue)')
                 except AssertionError:
                     ...
             
